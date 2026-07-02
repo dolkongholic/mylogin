@@ -263,7 +263,7 @@ export default function App(): JSX.Element {
   const combined = useMemo(() => {
     const local = entries.map((e) =>
       madeShareIds.has(e.id)
-        ? { ...e, labels: Array.from(new Set([...(e.labels ?? []), '공유'])) }
+        ? { ...e, sharedOut: true, labels: Array.from(new Set([...(e.labels ?? []), '공유'])) }
         : e
     )
     const received = sharedReceived.map((s) => ({

@@ -14,6 +14,7 @@ export interface LoginEntry {
   updatedAt: string // ISO
   // 런타임 표시용(받은 공유일 때만 설정, 로컬 저장 안 됨)
   shared?: { shareId: string; ownerEmail: string; permission: SharePermission }
+  sharedOut?: boolean // 내가 공유한 항목(소유자) 표시용
 }
 
 // 렌더러에 전달되는 항목 (평문 비밀번호 포함, 잠금 해제 상태에서만)

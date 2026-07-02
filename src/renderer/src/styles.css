@@ -1462,3 +1462,27 @@ textarea.input {
   margin-top: 0;
   flex: 0 0 auto;
 }
+
+/* ── 공유 방향 구별 (받음 / 공유중) ────────────────── */
+.share-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.share-tag.recv {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+}
+.share-tag.out {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 16%, transparent);
+}
+/* 내가 공유한 항목: 초록 좌측 강조선 (받은 항목의 배경 틴트와 구별) */
+.entry-card.sharedout,
+.entry-rowitem.sharedout {
+  box-shadow: inset 3px 0 0 0 var(--success);
+}

@@ -1,5 +1,5 @@
 import { useRef, type JSX } from 'react'
-import { IconStar, IconStarOutline, IconPointer } from './icons'
+import { IconStar, IconStarOutline } from './icons'
 import EntryAvatar from './EntryAvatar'
 import { copyText } from '../lib/utils'
 import { toast } from '../lib/toast'
@@ -93,7 +93,20 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
 
   const dndClass = `${dnd ? 'draggable' : ''} ${dragging ? 'dragging' : ''} ${
     dropBefore ? 'drop-before' : ''
-  } ${dropAfter ? 'drop-after' : ''} ${entry.shared ? 'shared' : ''}`
+  } ${dropAfter ? 'drop-after' : ''} ${entry.shared ? 'shared' : ''} ${
+    entry.sharedOut ? 'sharedout' : ''
+  }`
+
+  // 공유 방향 배지
+  const shareTag = entry.shared ? (
+    <span className="share-tag recv" title={`${entry.shared.ownerEmail}님이 공유`}>
+      받음
+    </span>
+  ) : entry.sharedOut ? (
+    <span className="share-tag out" title="내가 공유 중">
+      공유중
+    </span>
+  ) : null
 
   // 즐겨찾기 토글 버튼 (공유받은 항목은 제외)
   const favBtn = !entry.shared && (
@@ -126,6 +139,7 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
         )}
         <EntryAvatar entry={entry} size={30} className="sm" />
         <span className="ri-title">{entry.title}</span>
+        {shareTag}
         {favBtn}
         <span className="ri-user">{entry.username}</span>
         {entry.labels && entry.labels.length > 0 && (
@@ -140,9 +154,6 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
             )}
           </span>
         )}
-        <span className="entry-go" title="더블클릭하여 열기">
-          <IconPointer size={15} />
-        </span>
       </div>
     )
   }
@@ -153,6 +164,7 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
       <div className="entry-info">
         <div className="entry-title-row">
           <span className="entry-title">{entry.title}</span>
+          {shareTag}
           {favBtn}
         </div>
         <div className="entry-sub">
