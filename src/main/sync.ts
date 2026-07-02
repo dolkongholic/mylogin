@@ -450,8 +450,8 @@ export async function shareList(): Promise<SharesResult> {
       receivedFailed++
       continue
     }
-    // "공유받음" 라벨 부여 (표시용)
-    const labels = Array.from(new Set([...(entry.labels ?? []), '공유받음']))
+    // "공유" 라벨 부여 (표시용 — 받은/보낸 공유를 한 그룹으로)
+    const labels = Array.from(new Set([...(entry.labels ?? []), '공유']))
     received.push({
       shareId: s.id,
       ownerEmail: s.ownerEmail,
@@ -520,7 +520,7 @@ export async function shareUpdateBack(shareId: string, input: EntryInput): Promi
     username: input.username,
     password: input.password,
     url: input.url?.trim() || undefined,
-    labels: input.labels?.filter((l) => l !== '공유받음' && l !== '공유함'),
+    labels: input.labels?.filter((l) => l !== '공유'),
     notes: input.notes || undefined,
     icon: input.icon || undefined,
     favorite: !!input.favorite,

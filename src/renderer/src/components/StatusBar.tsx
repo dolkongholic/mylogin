@@ -22,7 +22,7 @@ export default function StatusBar({ onCheckUpdate, onShowNotes }: Props): JSX.El
           기록
         </button>
       </div>
-      <span className="status-right">MangoSpanner</span>
+      <span className="status-right">© 2026. NTPERCENT</span>
     </div>
   )
 }

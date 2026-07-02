@@ -1,5 +1,6 @@
 appId: com.ntpercent.mangologin
 productName: MangoLogin
+copyright: © 2026 NTPERCENT
 directories:
   output: dist
   buildResources: build

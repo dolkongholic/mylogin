@@ -1,5 +1,5 @@
 import { useRef, type JSX } from 'react'
-import { IconStar, IconStarOutline, IconChevronRight } from './icons'
+import { IconStar, IconStarOutline, IconPointer } from './icons'
 import EntryAvatar from './EntryAvatar'
 import { copyText } from '../lib/utils'
 import { toast } from '../lib/toast'
@@ -130,15 +130,18 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
         <span className="ri-user">{entry.username}</span>
         {entry.labels && entry.labels.length > 0 && (
           <span className="ri-labels">
-            {entry.labels.map((l) => (
+            {entry.labels.slice(0, 3).map((l) => (
               <span key={l} className="cat-chip">
                 {l}
               </span>
             ))}
+            {entry.labels.length > 3 && (
+              <span className="cat-chip">+{entry.labels.length - 3}</span>
+            )}
           </span>
         )}
-        <span className="entry-go">
-          <IconChevronRight size={17} />
+        <span className="entry-go" title="더블클릭하여 열기">
+          <IconPointer size={15} />
         </span>
       </div>
     )

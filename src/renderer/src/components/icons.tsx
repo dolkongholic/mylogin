@@ -119,6 +119,12 @@ export const IconDownload = ({ size }: P): JSX.Element => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
   </svg>
 )
+export const IconPointer = ({ size }: P): JSX.Element => (
+  <svg {...s(size)}>
+    <path d="M4 3l6.5 16 2.2-6.3L19 10.5 4 3Z" />
+    <path d="M13.5 13.5 19 19" />
+  </svg>
+)
 export const IconShare = ({ size }: P): JSX.Element => (
   <svg {...s(size)}>
     <circle cx="18" cy="5" r="3" />
