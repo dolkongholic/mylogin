@@ -1,0 +1,24 @@
+appId: com.ntpercent.mangologin
+productName: MangoLogin
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+win:
+  target:
+    - nsis
+  icon: build/icon.ico
+  artifactName: ${productName}-${version}-setup.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+# 자동 업데이트: GitHub Releases
+# 아래 owner/repo를 본인 GitHub 저장소로 바꾸세요.
+publish:
+  provider: github
+  owner: dolkongholic
+  repo: mylogin

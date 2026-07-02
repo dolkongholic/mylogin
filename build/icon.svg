@@ -1,0 +1,38 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff9a3c"/>
+      <stop offset="1" stop-color="#f5631e"/>
+    </linearGradient>
+    <linearGradient id="mango" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#ffe14d"/>
+      <stop offset="0.55" stop-color="#ffb53d"/>
+      <stop offset="1" stop-color="#ff8a2b"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5fcf6a"/>
+      <stop offset="1" stop-color="#2f9e4f"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- 망고 본체 -->
+  <path d="M256 120
+           C 350 120, 410 188, 410 280
+           C 410 372, 344 432, 256 432
+           C 168 432, 102 372, 102 280
+           C 102 188, 162 120, 256 120 Z"
+        fill="url(#mango)"/>
+
+  <!-- 잎 -->
+  <path d="M256 132 C 276 92, 318 80, 348 96 C 322 110, 300 128, 286 152 C 274 144, 264 138, 256 132 Z"
+        fill="url(#leaf)"/>
+
+  <!-- 키홀 (로그인/보안) -->
+  <g fill="#7a3410">
+    <circle cx="256" cy="262" r="50"/>
+    <path d="M236 296 L276 296 L292 372 L220 372 Z"/>
+  </g>
+  <circle cx="256" cy="262" r="50" fill="none" stroke="#ffd98a" stroke-width="6" opacity="0.5"/>
+</svg>
