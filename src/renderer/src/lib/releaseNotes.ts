@@ -7,6 +7,14 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.2.1': {
+    title: 'v0.2.1 — 트레이 상주',
+    items: [
+      '🗔 닫기 버튼을 누르면 종료하지 않고 **트레이로 최소화**됩니다',
+      '🟠 트레이 아이콘 클릭으로 다시 열기, 우클릭 메뉴의 "종료"로 완전 종료',
+      '⬆️ 자동 업데이트 서버 연결 완료 — 이 버전부터 새 버전이 자동 적용됩니다'
+    ]
+  },
   '0.2.0': {
     title: 'v0.2.0 — 라벨 · 동기화 수정',
     items: [
