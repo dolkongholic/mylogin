@@ -93,7 +93,7 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
 
   const dndClass = `${dnd ? 'draggable' : ''} ${dragging ? 'dragging' : ''} ${
     dropBefore ? 'drop-before' : ''
-  } ${dropAfter ? 'drop-after' : ''}`
+  } ${dropAfter ? 'drop-after' : ''} ${entry.shared ? 'shared' : ''}`
 
   // 즐겨찾기 토글 버튼 (공유받은 항목은 제외)
   const favBtn = !entry.shared && (
@@ -128,7 +128,15 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
         <span className="ri-title">{entry.title}</span>
         {favBtn}
         <span className="ri-user">{entry.username}</span>
-        {labelChip}
+        {entry.labels && entry.labels.length > 0 && (
+          <span className="ri-labels">
+            {entry.labels.map((l) => (
+              <span key={l} className="cat-chip">
+                {l}
+              </span>
+            ))}
+          </span>
+        )}
         <span className="entry-go">
           <IconChevronRight size={17} />
         </span>

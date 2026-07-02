@@ -138,6 +138,15 @@ export default function App(): JSX.Element {
     }
   }, [status?.unlocked, loadEntries, loadShares])
 
+  // 공유 자동 반영: 잠금 해제 상태에서 주기적으로 받은 공유 새로고침 (가져오기 안 눌러도 적용)
+  useEffect(() => {
+    if (!status?.unlocked) return
+    const t = setInterval(() => {
+      void loadShares()
+    }, 20000)
+    return () => clearInterval(t)
+  }, [status?.unlocked, loadShares])
+
   const lock = useCallback(async (): Promise<void> => {
     await window.api.lock()
     setEntries([])
@@ -187,14 +196,19 @@ export default function App(): JSX.Element {
       }
       return
     }
-    const res =
-      editing && editing.id
-        ? await window.api.updateEntry(editing.id, input)
-        : await window.api.addEntry(input)
+    const isUpdate = !!(editing && editing.id)
+    const res = isUpdate
+      ? await window.api.updateEntry(editing!.id, input)
+      : await window.api.addEntry(input)
     if (res.ok) {
+      const editedId = editing?.id
       setEditing(undefined)
       await loadEntries()
-      toast(editing?.id ? '항목이 수정되었습니다.' : '항목이 추가되었습니다.', 'success')
+      toast(isUpdate ? '항목이 수정되었습니다.' : '항목이 추가되었습니다.', 'success')
+      // 공유 중인 항목을 수정했으면 수신자들에게 자동 반영
+      if (editedId && madeShareIds.has(editedId)) {
+        void window.api.shareReshare(editedId).then(() => loadShares())
+      }
     } else {
       throw new Error(res.error)
     }

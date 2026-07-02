@@ -33,6 +33,7 @@ const api: VaultApi = {
   shareList: () => ipcRenderer.invoke('share:list'),
   shareDelete: (shareId) => ipcRenderer.invoke('share:delete', shareId),
   shareUpdateBack: (shareId, input) => ipcRenderer.invoke('share:updateBack', shareId, input),
+  shareReshare: (itemId) => ipcRenderer.invoke('share:reshare', itemId),
 
   appVersion: () => ipcRenderer.invoke('app:version'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),

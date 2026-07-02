@@ -1432,3 +1432,33 @@ textarea.input {
   color: var(--warning);
   background: var(--bg);
 }
+
+/* ── 공유받은 항목 구별 (옅은 테두리/배경) ─────────── */
+.entry-card.shared,
+.entry-rowitem.shared {
+  background: color-mix(in srgb, var(--primary) 7%, var(--bg-elev));
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--border));
+}
+.entry-card.shared:hover,
+.entry-rowitem.shared:hover {
+  background: color-mix(in srgb, var(--primary) 12%, var(--bg-elev-2));
+  border-color: var(--primary);
+}
+
+/* ── 리스트 라벨 전부 표시 ─────────────────────────── */
+.ri-user {
+  flex: 1 1 auto;
+  min-width: 40px;
+}
+.ri-labels {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.ri-labels .cat-chip {
+  margin-top: 0;
+  flex: 0 0 auto;
+}

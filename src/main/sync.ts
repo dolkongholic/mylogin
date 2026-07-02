@@ -1,5 +1,6 @@
 import { app } from 'electron'
 import { promises as fs } from 'node:fs'
+import * as fsSync from 'node:fs'
 import path from 'node:path'
 import {
   decrypt,
@@ -52,6 +53,39 @@ function configPath(): string {
   return path.join(app.getPath('userData'), 'sync-config.json')
 }
 
+function sessionPath(): string {
+  return path.join(app.getPath('userData'), 'sync-session.json')
+}
+
+// 로그인 토큰을 디스크에 저장/복원 → 재시작(업데이트) 후에도 로그인 유지.
+// (토큰은 사용자 범위 + 만료 있음. 금고 내용은 별도 마스터 비번으로 암호화됨)
+function persistSession(): void {
+  try {
+    if (session) fsSync.writeFileSync(sessionPath(), JSON.stringify(session), 'utf8')
+  } catch {
+    /* 무시 */
+  }
+}
+function clearSessionFile(): void {
+  try {
+    fsSync.rmSync(sessionPath(), { force: true })
+  } catch {
+    /* 무시 */
+  }
+}
+let sessionRestored = false
+function restoreSessionSync(): void {
+  if (sessionRestored) return
+  sessionRestored = true
+  try {
+    const raw = fsSync.readFileSync(sessionPath(), 'utf8')
+    const parsed = JSON.parse(raw) as { token: string; email: string }
+    if (parsed?.token && parsed?.email) session = parsed
+  } catch {
+    /* 없음 */
+  }
+}
+
 let cachedConfig: SyncConfig | null = null
 let session: { token: string; email: string } | null = null
 let accountKey: Buffer | null = null // 서버 salt 기준으로 파생한 동기화 전용 키
@@ -100,6 +134,7 @@ async function base(): Promise<string> {
 }
 
 function requireToken(): string {
+  if (!session) restoreSessionSync()
   if (!session) throw new Error('로그인이 필요합니다.')
   return session.token
 }
@@ -130,6 +165,7 @@ export async function signIn(email: string, password: string): Promise<void> {
     false
   )) as { token: string; email: string }
   session = { token: data.token, email: data.email }
+  persistSession()
 }
 
 export async function signUp(email: string, password: string): Promise<void> {
@@ -139,6 +175,7 @@ export async function signUp(email: string, password: string): Promise<void> {
 
 export function signOut(): void {
   session = null
+  clearSessionFile()
   if (accountKey) accountKey.fill(0)
   accountKey = null
   accountKdf = null
@@ -302,6 +339,7 @@ export async function deleteAllRemote(): Promise<void> {
 
 // ── 상태 비교 ─────────────────────────────────────────────────
 export async function status(): Promise<SyncSummary> {
+  if (!session) restoreSessionSync()
   if (!session) return { signedIn: false, items: [], lastSyncedAt }
   await ensureAccountKey()
   const local = listEntries()
@@ -496,4 +534,31 @@ export async function shareUpdateBack(shareId: string, input: EntryInput): Promi
     method: 'PUT',
     body: JSON.stringify({ id: shareId, payload: selfPayload, ownerPayload })
   })
+}
+
+// 소유자가 공유한 항목을 수정했을 때, 모든 수신자에게 재암호화해 재공유 (자동 반영)
+export async function reshareItem(itemId: string): Promise<number> {
+  await ensureBox()
+  const entry = listEntries().find((e) => e.id === itemId)
+  if (!entry) return 0
+  const raw = (await apiFetch('/api/vault/shares', { method: 'GET' })) as RawShares
+  const mine = raw.made.filter((m) => m.itemId === itemId)
+  for (const m of mine) {
+    try {
+      const pub = await lookupPubKey(m.recipientEmail)
+      await apiFetch('/api/vault/shares', {
+        method: 'POST',
+        body: JSON.stringify({
+          itemId,
+          recipientEmail: m.recipientEmail,
+          permission: m.permission,
+          payload: boxEncryptFor(pub, JSON.stringify(entry)),
+          title: entry.title
+        })
+      })
+    } catch {
+      /* 개별 실패 무시 */
+    }
+  }
+  return mine.length
 }
