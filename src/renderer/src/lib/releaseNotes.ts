@@ -7,6 +7,15 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.2.5': {
+    title: 'v0.2.5 — 트레이 안내 · 자동 실행',
+    items: [
+      '🗔 닫기 = 트레이 상주 (창만 숨김, 종료 아님). 처음 닫을 때 트레이 위치 안내 표시',
+      '🔎 트레이 아이콘이 안 보이면 작업표시줄 오른쪽 “^”(숨은 아이콘) 안에 있어요. 우클릭 → 열기/종료',
+      '🚀 설정에 "PC 시작 시 자동 실행" 추가',
+      '🔜 다음: 종단간 암호화 공유 (서버 준비 후)'
+    ]
+  },
   '0.2.4': {
     title: 'v0.2.4 — 하단 상태줄 버튼',
     items: [

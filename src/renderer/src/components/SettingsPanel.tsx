@@ -16,10 +16,18 @@ export default function SettingsPanel({ onClose, onShowNotes }: Props): JSX.Elem
   const [busy, setBusy] = useState(false)
   const [updateMsg, setUpdateMsg] = useState('')
   const autoLock = useAutoLock()
+  const [autoLaunch, setAutoLaunchState] = useState(false)
 
   useEffect(() => {
     window.api.appVersion().then(setVersion)
+    window.api.getAutoLaunch().then(setAutoLaunchState)
   }, [])
+
+  async function toggleAutoLaunch(enabled: boolean): Promise<void> {
+    const result = await window.api.setAutoLaunch(enabled)
+    setAutoLaunchState(result)
+    toast(result ? 'PC 시작 시 자동 실행 켬' : '자동 실행 끔', 'success')
+  }
 
   async function changeMaster(): Promise<void> {
     if (next.length < 4) return toast('새 비밀번호는 4자 이상이어야 합니다.', 'error')
@@ -69,6 +77,20 @@ export default function SettingsPanel({ onClose, onShowNotes }: Props): JSX.Elem
             </select>
             <div className="faint" style={{ fontSize: 11.5, marginTop: 6 }}>
               마우스·키보드 입력이 선택한 시간 동안 없으면 자동으로 잠깁니다.
+            </div>
+          </div>
+
+          <div className="field">
+            <label className="toggle-row">
+              <input
+                type="checkbox"
+                checked={autoLaunch}
+                onChange={(e) => toggleAutoLaunch(e.target.checked)}
+              />
+              <span>PC 시작 시 자동 실행</span>
+            </label>
+            <div className="faint" style={{ fontSize: 11.5, marginTop: 6 }}>
+              Windows 로그인 시 MangoLogin이 자동으로 실행됩니다. (닫기 = 트레이 상주)
             </div>
           </div>
 

@@ -1376,3 +1376,20 @@ textarea.input {
   color: var(--primary);
   text-decoration: underline;
 }
+
+/* ── 토글 행(체크박스) ─────────────────────────────── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--text);
+  font-weight: 500;
+}
+.toggle-row input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}

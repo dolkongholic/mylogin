@@ -31,6 +31,8 @@ const api: VaultApi = {
   appVersion: () => ipcRenderer.invoke('app:version'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
   restartToUpdate: () => ipcRenderer.invoke('app:quitAndInstall'),
+  getAutoLaunch: () => ipcRenderer.invoke('app:getAutoLaunch'),
+  setAutoLaunch: (enabled) => ipcRenderer.invoke('app:setAutoLaunch', enabled),
   onUpdateEvent: (cb: (evt: UpdateEvent) => void) => {
     const listener = (_e: unknown, evt: UpdateEvent): void => cb(evt)
     ipcRenderer.on('update-event', listener)

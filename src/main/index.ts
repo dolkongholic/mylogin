@@ -10,6 +10,7 @@ loadEnv({ path: join(app.getAppPath(), '.env') })
 
 let tray: Tray | null = null
 let isQuitting = false
+let trayHintShown = false
 
 function iconPath(): string {
   return app.isPackaged
@@ -49,6 +50,18 @@ function createWindow(): BrowserWindow {
     if (!isQuitting) {
       e.preventDefault()
       win.hide()
+      // 처음 숨길 때 트레이 위치 안내 (Windows 11은 새 아이콘을 ^ 숨김영역에 넣음)
+      if (!trayHintShown && tray) {
+        trayHintShown = true
+        try {
+          tray.displayBalloon({
+            title: 'MangoLogin은 계속 실행 중이에요',
+            content: '창을 닫아도 종료되지 않고 트레이로 이동합니다. 작업표시줄 오른쪽 “^”(숨은 아이콘)에서 MangoLogin을 찾을 수 있어요. 완전히 끄려면 트레이 아이콘 우클릭 → 종료.'
+          })
+        } catch {
+          /* 무시 */
+        }
+      }
     }
   })
 
@@ -108,6 +121,16 @@ app.whenReady().then(() => {
   ipcMain.handle('app:quitAndInstall', () => {
     isQuitting = true
     quitAndInstall()
+  })
+
+  // PC 시작 시 자동 실행
+  ipcMain.handle('app:getAutoLaunch', () => app.getLoginItemSettings().openAtLogin)
+  ipcMain.handle('app:setAutoLaunch', (_e, enabled: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+      args: [] // 필요 시 '--hidden' 등 추가 가능
+    })
+    return app.getLoginItemSettings().openAtLogin
   })
 
   const win = createWindow()

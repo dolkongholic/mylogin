@@ -77,6 +77,8 @@ export interface VaultApi {
   appVersion: () => Promise<string>
   checkForUpdates: () => Promise<ApiResult<string>>
   restartToUpdate: () => Promise<void>
+  getAutoLaunch: () => Promise<boolean>
+  setAutoLaunch: (enabled: boolean) => Promise<boolean>
   onUpdateEvent: (cb: (evt: UpdateEvent) => void) => () => void
 
   // 커스텀 창 컨트롤
