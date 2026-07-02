@@ -7,6 +7,15 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.2.3': {
+    title: 'v0.2.3 — 새 소식 알림 정상화',
+    items: [
+      '🎉 업데이트 후 첫 실행 시 이 "새 소식" 창이 확실히 표시됩니다',
+      '🗔 닫기 = 트레이 최소화 (트레이 클릭으로 열기, 우클릭 → 종료)',
+      '🏷️ 라벨(다중) · 🔄 동기화 가져오기 수정 · 🌐 URL 파비콘 · 🔒 자동 잠금',
+      '⚙️ 설정 → "패치 내용 보기"로 언제든 다시 볼 수 있어요'
+    ]
+  },
   '0.2.2': {
     title: 'v0.2.2 — 패치 내용 보기',
     items: [
@@ -36,13 +45,13 @@ export const RELEASE_NOTES: Record<string, ReleaseNote> = {
   }
 }
 
-const SEEN_KEY = 'mylogin-seen-version'
+const SEEN_KEY = 'mylogin-notes-seen-v2'
 
-// 업데이트되어 처음 실행됐는지 (최초 설치는 제외)
+// 이 버전의 패치 내용을 아직 안 봤으면 true.
+// (패치 내용이 있는 버전이고, 마지막으로 본 버전과 다르면 표시 — 최초 실행 포함)
 export function isFreshUpdate(current: string): boolean {
-  const seen = localStorage.getItem(SEEN_KEY)
-  if (seen === null) return false // 최초 설치
-  return seen !== current
+  if (!notesFor(current)) return false
+  return localStorage.getItem(SEEN_KEY) !== current
 }
 
 export function markVersionSeen(current: string): void {
