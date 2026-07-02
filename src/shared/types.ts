@@ -110,6 +110,7 @@ export interface VaultApi {
   shareDelete: (shareId: string) => Promise<ApiResult>
   shareUpdateBack: (shareId: string, input: EntryInput) => Promise<ApiResult>
   shareReshare: (itemId: string) => Promise<ApiResult>
+  shareUnshareItem: (itemId: string) => Promise<ApiResult>
 
   // 앱/업데이트
   appVersion: () => Promise<string>

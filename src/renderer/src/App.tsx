@@ -116,20 +116,24 @@ export default function App(): JSX.Element {
   }, [])
 
   // 공유 목록 로드 (로그인 상태에서만 성공). 실패 시 조용히 비움.
-  const loadShares = useCallback(async (): Promise<void> => {
-    const res = await window.api.shareList()
-    if (res.ok && res.data) {
-      setSharedReceived(res.data.received)
-      setMadeShareIds(new Set(res.data.made.map((m) => m.itemId)))
-      if (res.data.appliedOwnerUpdates > 0) {
-        await loadEntries()
-        toast(`공유받은 수정 ${res.data.appliedOwnerUpdates}건을 반영했습니다.`, 'success')
+  const loadShares = useCallback(
+    async (silent = false): Promise<void> => {
+      const res = await window.api.shareList()
+      if (res.ok && res.data) {
+        setSharedReceived(res.data.received)
+        setMadeShareIds(new Set(res.data.made.map((m) => m.itemId)))
+        if (res.data.appliedOwnerUpdates > 0) {
+          await loadEntries()
+          if (!silent)
+            toast(`공유받은 수정 ${res.data.appliedOwnerUpdates}건을 반영했습니다.`, 'success')
+        }
+      } else if (!silent) {
+        setSharedReceived([])
+        setMadeShareIds(new Set())
       }
-    } else {
-      setSharedReceived([])
-      setMadeShareIds(new Set())
-    }
-  }, [loadEntries])
+    },
+    [loadEntries]
+  )
 
   useEffect(() => {
     if (status?.unlocked) {
@@ -142,7 +146,7 @@ export default function App(): JSX.Element {
   useEffect(() => {
     if (!status?.unlocked) return
     const t = setInterval(() => {
-      void loadShares()
+      void loadShares(true)
     }, 20000)
     return () => clearInterval(t)
   }, [status?.unlocked, loadShares])
@@ -242,6 +246,11 @@ export default function App(): JSX.Element {
     if (!ok) return false
     const res = await window.api.deleteEntry(entry.id)
     if (res.ok) {
+      // 공유 중이던 항목이면 서버 공유도 정리 (자동 새로고침으로 되살아나지 않게)
+      if (madeShareIds.has(entry.id)) {
+        await window.api.shareUnshareItem(entry.id)
+        await loadShares()
+      }
       await loadEntries()
       toast('항목이 삭제되었습니다.', 'success')
       return true

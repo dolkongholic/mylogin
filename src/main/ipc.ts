@@ -117,6 +117,7 @@ export function registerIpc(): void {
     wrap(() => sync.shareUpdateBack(shareId, input))
   )
   ipcMain.handle('share:reshare', (_e, itemId: string) => wrap(() => sync.reshareItem(itemId)))
+  ipcMain.handle('share:unshareItem', (_e, itemId: string) => wrap(() => sync.unshareItem(itemId)))
 
   // ── 앱/업데이트 ───────────────────────────────────────
   ipcMain.handle('app:version', () => app.getVersion())

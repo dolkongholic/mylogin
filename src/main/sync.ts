@@ -95,6 +95,26 @@ let pubkeyRegistered = false
 const receivedCtx = new Map<string, { ownerEmail: string; itemId: string }>()
 let lastSyncedAt: string | undefined
 
+// 동기화 작업 직렬화 — 여러 번 동시에 눌러도 하나씩 처리
+let opLock: Promise<void> | null = null
+async function withLock<T>(fn: () => Promise<T>): Promise<T> {
+  while (opLock) {
+    try {
+      await opLock
+    } catch {
+      /* 무시 */
+    }
+  }
+  let release: () => void = () => {}
+  opLock = new Promise<void>((r) => (release = r))
+  try {
+    return await fn()
+  } finally {
+    release()
+    opLock = null
+  }
+}
+
 export async function getConfig(): Promise<SyncConfig | null> {
   if (cachedConfig) return cachedConfig
   if (BAKED_API_URL) {
@@ -280,12 +300,15 @@ function decryptBlob(blob: string): LoginEntry | null {
 
 // ── 업로드 / 가져오기 / 삭제 ─────────────────────────────────
 export async function pushAll(): Promise<void> {
-  await ensureAccountKey()
-  const items = listEntries().map(encryptEntry)
-  if (items.length > 0) {
-    await apiFetch('/api/vault/items', { method: 'POST', body: JSON.stringify({ items }) })
-  }
-  lastSyncedAt = new Date().toISOString()
+  return withLock(async () => {
+    await ensureAccountKey()
+    // "지금 내 로컬 상태"를 업로드 (덮어쓰기). 로컬에 없는 서버 항목은 삭제하지 않고 서버에 그대로 둔다.
+    const items = listEntries().map(encryptEntry)
+    if (items.length > 0) {
+      await apiFetch('/api/vault/items', { method: 'POST', body: JSON.stringify({ items }) })
+    }
+    lastSyncedAt = new Date().toISOString()
+  })
 }
 
 export async function pushOne(id: string): Promise<void> {
@@ -311,18 +334,20 @@ async function fetchRemote(): Promise<RemoteItem[]> {
 }
 
 export async function pull(): Promise<{ merged: number; failed: number }> {
-  await ensureAccountKey()
-  const rows = await fetchRemote()
-  const decrypted: LoginEntry[] = []
-  let failed = 0
-  for (const r of rows) {
-    const e = decryptBlob(r.blob)
-    if (e) decrypted.push(e)
-    else failed++
-  }
-  if (decrypted.length > 0) await mergeEntries(decrypted)
-  lastSyncedAt = new Date().toISOString()
-  return { merged: decrypted.length, failed }
+  return withLock(async () => {
+    await ensureAccountKey()
+    const rows = await fetchRemote()
+    const decrypted: LoginEntry[] = []
+    let failed = 0
+    for (const r of rows) {
+      const e = decryptBlob(r.blob)
+      if (e) decrypted.push(e)
+      else failed++
+    }
+    if (decrypted.length > 0) await mergeEntries(decrypted)
+    lastSyncedAt = new Date().toISOString()
+    return { merged: decrypted.length, failed }
+  })
 }
 
 export async function deleteRemote(id: string): Promise<void> {
@@ -430,6 +455,7 @@ interface RawShares {
 }
 
 export async function shareList(): Promise<SharesResult> {
+  return withLock(async () => {
   const pair = await ensureBox()
   const raw = (await apiFetch('/api/vault/shares', { method: 'GET' })) as RawShares
 
@@ -506,6 +532,7 @@ export async function shareList(): Promise<SharesResult> {
   }
 
   return { received, made, appliedOwnerUpdates: applied, receivedFailed }
+  })
 }
 
 // 수신자(edit 권한)가 공유 항목을 수정 → 소유자에게 되돌려 보냄
@@ -561,4 +588,18 @@ export async function reshareItem(itemId: string): Promise<number> {
     }
   }
   return mine.length
+}
+
+// 소유자가 로컬 항목을 삭제할 때 그 항목의 모든 공유도 서버에서 정리 (폴링 재생성 방지)
+export async function unshareItem(itemId: string): Promise<void> {
+  requireToken()
+  const raw = (await apiFetch('/api/vault/shares', { method: 'GET' })) as RawShares
+  const mine = raw.made.filter((m) => m.itemId === itemId)
+  for (const m of mine) {
+    try {
+      await apiFetch(`/api/vault/shares?id=${encodeURIComponent(m.id)}`, { method: 'DELETE' })
+    } catch {
+      /* 무시 */
+    }
+  }
 }
