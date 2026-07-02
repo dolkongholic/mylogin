@@ -1,6 +1,6 @@
 {
   "name": "mylogin",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "로컬 우선 암호화 로그인(비밀번호) 관리 프로그램",
   "main": "./out/main/index.js",
   "author": "NTPERCENT",
@@ -14,7 +14,8 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "dist": "electron-vite build && electron-builder",
-    "dist:win": "electron-vite build && electron-builder --win"
+    "dist:win": "electron-vite build && electron-builder --win",
+    "release": "electron-vite build && electron-builder --win --publish always"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

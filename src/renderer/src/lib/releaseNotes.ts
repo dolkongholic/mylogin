@@ -7,6 +7,16 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.3.6': {
+    title: 'v0.3.6 — 실제 반영 수정 (중요)',
+    items: [
+      '🛠️ 그동안 화면 변경이 실제로 반영 안 되던 배포 버그 수정 (릴리스 시 렌더러 재빌드 누락)',
+      '© 하단 우측 저작권 "© 2026. NTPERCENT" 로 표시',
+      '🔔 토스트 최대 2개 + 중복 방지, 공유 폴링 조용히',
+      '🔒 동기화 동시 실행 방지, 전체 업로드 단방향, 공유 삭제 정리',
+      '🔓 서버 동기화 로그인 유지'
+    ]
+  },
   '0.3.5': {
     title: 'v0.3.5 — 동기화 안정화',
     items: [
