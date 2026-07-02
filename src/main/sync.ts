@@ -11,7 +11,26 @@ import {
   type EncryptedBlob
 } from './crypto'
 import { getKdf, getMasterPassword, listEntries, mergeEntries } from './vault'
-import type { LoginEntry, SyncSummary, SyncItemStatus, SyncState } from '../shared/types'
+import {
+  deriveBoxKeyPair,
+  boxPublicKeyB64,
+  boxEncryptFor,
+  boxDecrypt,
+  type BoxPayload
+} from './box'
+import type {
+  LoginEntry,
+  SyncSummary,
+  SyncItemStatus,
+  SyncState,
+  SharePermission,
+  SharesResult,
+  SharedReceived,
+  ShareMade,
+  EntryInput
+} from '../shared/types'
+
+type BoxKeyPairT = ReturnType<typeof deriveBoxKeyPair>
 
 // ── mangomail 서버 API를 통한 동기화 (DB 직결 X) ─────────────
 // - 앱에는 공개 서버 주소만 내장 (DB 비밀번호 없음 → 오픈 배포 안전)
@@ -36,6 +55,10 @@ function configPath(): string {
 let cachedConfig: SyncConfig | null = null
 let session: { token: string; email: string } | null = null
 let accountKey: Buffer | null = null // 서버 salt 기준으로 파생한 동기화 전용 키
+let accountKdf: KdfParams | null = null
+let boxPair: BoxKeyPairT | null = null
+let pubkeyRegistered = false
+const receivedCtx = new Map<string, { ownerEmail: string; itemId: string }>()
 let lastSyncedAt: string | undefined
 
 export async function getConfig(): Promise<SyncConfig | null> {
@@ -118,6 +141,10 @@ export function signOut(): void {
   session = null
   if (accountKey) accountKey.fill(0)
   accountKey = null
+  accountKdf = null
+  boxPair = null
+  pubkeyRegistered = false
+  receivedCtx.clear()
 }
 
 // ── 계정 키 (서버 salt 기준 파생) ─────────────────────────────
@@ -154,6 +181,7 @@ async function ensureAccountKey(): Promise<Buffer> {
       throw new Error('서버 금고를 만든 마스터 비밀번호와 다릅니다. 같은 비밀번호로 로그인하세요.')
     }
     accountKey = key
+    accountKdf = kdf
   } else {
     // 최초 동기화: 현재 로컬 kdf로 메타 생성 (기존 로컬키 blob과도 호환)
     const kdf = getKdf()
@@ -169,8 +197,30 @@ async function ensureAccountKey(): Promise<Buffer> {
       })
     })
     accountKey = key
+    accountKdf = kdf
   }
   return accountKey
+}
+
+// 공유용 박스 키쌍 준비 + 공개키 서버 등록 (세션 1회)
+async function ensureBox(): Promise<BoxKeyPairT> {
+  const key = await ensureAccountKey()
+  if (!boxPair) boxPair = deriveBoxKeyPair(key)
+  if (!pubkeyRegistered && accountKdf) {
+    await apiFetch('/api/vault/meta', {
+      method: 'PUT',
+      body: JSON.stringify({
+        kdfSalt: accountKdf.salt,
+        kdfN: accountKdf.N,
+        kdfR: accountKdf.r,
+        kdfP: accountKdf.p,
+        verifier: JSON.stringify(makeVerifier(key)),
+        boxPublicKey: boxPublicKeyB64(boxPair)
+      })
+    })
+    pubkeyRegistered = true
+  }
+  return boxPair
 }
 
 // ── 암호화 헬퍼 (계정 키 사용) ────────────────────────────────
@@ -282,4 +332,163 @@ export async function status(): Promise<SyncSummary> {
   }
   items.sort((a, b) => a.title.localeCompare(b.title, 'ko'))
   return { signedIn: true, email: session.email, items, lastSyncedAt }
+}
+
+// ── 공유 (E2E) ────────────────────────────────────────────────
+async function lookupPubKey(email: string): Promise<string> {
+  const data = (await apiFetch(
+    `/api/vault/pubkey?email=${encodeURIComponent(email)}`,
+    { method: 'GET' }
+  )) as { publicKey: string }
+  return data.publicKey
+}
+
+export async function shareCreate(
+  itemId: string,
+  recipientEmail: string,
+  permission: SharePermission
+): Promise<void> {
+  await ensureBox()
+  const entry = listEntries().find((e) => e.id === itemId)
+  if (!entry) throw new Error('항목을 찾을 수 없습니다.')
+  const pub = await lookupPubKey(recipientEmail.trim().toLowerCase())
+  const payload = boxEncryptFor(pub, JSON.stringify(entry))
+  await apiFetch('/api/vault/shares', {
+    method: 'POST',
+    body: JSON.stringify({
+      itemId,
+      recipientEmail: recipientEmail.trim().toLowerCase(),
+      permission,
+      payload,
+      title: entry.title
+    })
+  })
+}
+
+export async function shareDelete(shareId: string): Promise<void> {
+  requireToken()
+  await apiFetch(`/api/vault/shares?id=${encodeURIComponent(shareId)}`, { method: 'DELETE' })
+}
+
+interface RawShares {
+  received: Array<{
+    id: string
+    itemId: string
+    permission: SharePermission
+    payload: BoxPayload
+    title: string | null
+    updatedAt: string
+    ownerEmail: string
+  }>
+  made: Array<{
+    id: string
+    itemId: string
+    permission: SharePermission
+    ownerPayload: BoxPayload | null
+    title: string | null
+    updatedAt: string
+    recipientEmail: string
+  }>
+}
+
+export async function shareList(): Promise<SharesResult> {
+  const pair = await ensureBox()
+  const raw = (await apiFetch('/api/vault/shares', { method: 'GET' })) as RawShares
+
+  // 받은 공유 복호화
+  const received: SharedReceived[] = []
+  receivedCtx.clear()
+  for (const s of raw.received) {
+    const json = boxDecrypt(s.payload, pair.secretKey)
+    if (!json) continue
+    let entry: LoginEntry
+    try {
+      entry = JSON.parse(json) as LoginEntry
+    } catch {
+      continue
+    }
+    // "공유받음" 라벨 부여 (표시용)
+    const labels = Array.from(new Set([...(entry.labels ?? []), '공유받음']))
+    received.push({
+      shareId: s.id,
+      ownerEmail: s.ownerEmail,
+      permission: s.permission,
+      entry: { ...entry, id: s.itemId, labels }
+    })
+    receivedCtx.set(s.id, { ownerEmail: s.ownerEmail, itemId: s.itemId })
+  }
+
+  // 내가 공유한 것 — 수신자가 수정(ownerPayload)했으면 내 항목에 반영
+  let applied = 0
+  const made: ShareMade[] = []
+  for (const s of raw.made) {
+    made.push({
+      shareId: s.id,
+      itemId: s.itemId,
+      recipientEmail: s.recipientEmail,
+      permission: s.permission,
+      title: s.title ?? undefined
+    })
+    if (s.ownerPayload) {
+      const json = boxDecrypt(s.ownerPayload, pair.secretKey)
+      if (json) {
+        try {
+          const updated = JSON.parse(json) as LoginEntry
+          await mergeEntries([{ ...updated, id: s.itemId }])
+          applied++
+          // 반영 후 수신자용 payload 갱신 + ownerPayload 정리를 위해 재공유
+          try {
+            const pub = await lookupPubKey(s.recipientEmail)
+            const entry = listEntries().find((e) => e.id === s.itemId)
+            if (entry) {
+              await apiFetch('/api/vault/shares', {
+                method: 'POST',
+                body: JSON.stringify({
+                  itemId: s.itemId,
+                  recipientEmail: s.recipientEmail,
+                  permission: s.permission,
+                  payload: boxEncryptFor(pub, JSON.stringify(entry)),
+                  title: entry.title
+                })
+              })
+            }
+          } catch {
+            /* 재공유 실패는 무시 */
+          }
+        } catch {
+          /* 무시 */
+        }
+      }
+    }
+  }
+
+  return { received, made, appliedOwnerUpdates: applied }
+}
+
+// 수신자(edit 권한)가 공유 항목을 수정 → 소유자에게 되돌려 보냄
+export async function shareUpdateBack(shareId: string, input: EntryInput): Promise<void> {
+  const pair = await ensureBox()
+  const ctx = receivedCtx.get(shareId)
+  if (!ctx) throw new Error('공유 정보를 찾을 수 없습니다. 먼저 새로고침하세요.')
+  const now = new Date().toISOString()
+  const entry: LoginEntry = {
+    id: ctx.itemId,
+    title: input.title.trim(),
+    username: input.username,
+    password: input.password,
+    url: input.url?.trim() || undefined,
+    labels: input.labels?.filter((l) => l !== '공유받음' && l !== '공유함'),
+    notes: input.notes || undefined,
+    icon: input.icon || undefined,
+    favorite: !!input.favorite,
+    createdAt: now,
+    updatedAt: now
+  }
+  const selfPayload = boxEncryptFor(boxPublicKeyB64(pair), JSON.stringify(entry))
+  const ownerPub = await lookupPubKey(ctx.ownerEmail)
+  const ownerPayload = boxEncryptFor(ownerPub, JSON.stringify(entry))
+  await apiFetch('/api/vault/shares', {
+    method: 'PUT',
+    body: JSON.stringify({ id: shareId, payload: selfPayload, ownerPayload })
+  })
 }

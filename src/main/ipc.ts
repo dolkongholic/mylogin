@@ -107,6 +107,16 @@ export function registerIpc(): void {
     })
   )
 
+  // ── 공유 (E2E) ────────────────────────────────────────
+  ipcMain.handle('share:create', (_e, itemId: string, email: string, perm: 'read' | 'edit') =>
+    wrap(() => sync.shareCreate(itemId, email, perm))
+  )
+  ipcMain.handle('share:list', () => wrap(() => sync.shareList()))
+  ipcMain.handle('share:delete', (_e, shareId: string) => wrap(() => sync.shareDelete(shareId)))
+  ipcMain.handle('share:updateBack', (_e, shareId: string, input: EntryInput) =>
+    wrap(() => sync.shareUpdateBack(shareId, input))
+  )
+
   // ── 앱/업데이트 ───────────────────────────────────────
   ipcMain.handle('app:version', () => app.getVersion())
   ipcMain.handle('app:checkForUpdates', () => wrap(() => checkForUpdates()))

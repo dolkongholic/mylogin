@@ -1393,3 +1393,21 @@ textarea.input {
   accent-color: var(--primary);
   cursor: pointer;
 }
+
+/* ── 공유받음 배너 ─────────────────────────────────── */
+.shared-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  color: var(--text);
+  font-size: 12.5px;
+}
+.shared-banner svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}

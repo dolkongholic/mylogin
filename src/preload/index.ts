@@ -28,6 +28,12 @@ const api: VaultApi = {
   syncDeleteRemote: (id) => ipcRenderer.invoke('sync:deleteRemote', id),
   syncDeleteAllRemote: () => ipcRenderer.invoke('sync:deleteAllRemote'),
 
+  shareCreate: (itemId, email, permission) =>
+    ipcRenderer.invoke('share:create', itemId, email, permission),
+  shareList: () => ipcRenderer.invoke('share:list'),
+  shareDelete: (shareId) => ipcRenderer.invoke('share:delete', shareId),
+  shareUpdateBack: (shareId, input) => ipcRenderer.invoke('share:updateBack', shareId, input),
+
   appVersion: () => ipcRenderer.invoke('app:version'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
   restartToUpdate: () => ipcRenderer.invoke('app:quitAndInstall'),

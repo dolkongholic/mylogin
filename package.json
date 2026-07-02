@@ -1,6 +1,6 @@
 {
   "name": "mylogin",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "로컬 우선 암호화 로그인(비밀번호) 관리 프로그램",
   "main": "./out/main/index.js",
   "author": "NTPERCENT",
@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "electron-updater": "^6.3.9"
+    "electron-updater": "^6.3.9",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

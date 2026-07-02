@@ -12,6 +12,8 @@ export interface LoginEntry {
   favorite?: boolean
   createdAt: string // ISO
   updatedAt: string // ISO
+  // 런타임 표시용(받은 공유일 때만 설정, 로컬 저장 안 됨)
+  shared?: { shareId: string; ownerEmail: string; permission: SharePermission }
 }
 
 // 렌더러에 전달되는 항목 (평문 비밀번호 포함, 잠금 해제 상태에서만)
@@ -46,6 +48,30 @@ export interface ApiResult<T = void> {
   data?: T
 }
 
+// ── 공유 (E2E) ──────────────────────────────────────
+export type SharePermission = 'read' | 'edit'
+
+export interface SharedReceived {
+  shareId: string
+  ownerEmail: string
+  permission: SharePermission
+  entry: LoginEntry // 복호화된 항목 (읽기 전용 표시용)
+}
+
+export interface ShareMade {
+  shareId: string
+  itemId: string
+  recipientEmail: string
+  permission: SharePermission
+  title?: string
+}
+
+export interface SharesResult {
+  received: SharedReceived[]
+  made: ShareMade[]
+  appliedOwnerUpdates: number // 수신자가 수정한 걸 내 항목에 반영한 개수
+}
+
 // preload가 노출하는 API 시그니처
 export interface VaultApi {
   getStatus: () => Promise<VaultStatus>
@@ -72,6 +98,16 @@ export interface VaultApi {
   syncPull: () => Promise<ApiResult<SyncSummary>>
   syncDeleteRemote: (id: string) => Promise<ApiResult<SyncSummary>>
   syncDeleteAllRemote: () => Promise<ApiResult<SyncSummary>>
+
+  // 공유 (E2E)
+  shareCreate: (
+    itemId: string,
+    recipientEmail: string,
+    permission: SharePermission
+  ) => Promise<ApiResult>
+  shareList: () => Promise<ApiResult<SharesResult>>
+  shareDelete: (shareId: string) => Promise<ApiResult>
+  shareUpdateBack: (shareId: string, input: EntryInput) => Promise<ApiResult>
 
   // 앱/업데이트
   appVersion: () => Promise<string>

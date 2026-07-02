@@ -3,6 +3,7 @@ import UnlockScreen from './components/UnlockScreen'
 import EntryCard, { type DndHandlers } from './components/EntryCard'
 import EntryEditor from './components/EntryEditor'
 import EntryDetail from './components/EntryDetail'
+import ShareDialog from './components/ShareDialog'
 import SyncPanel from './components/SyncPanel'
 import SettingsPanel from './components/SettingsPanel'
 import Toasts from './components/Toasts'
@@ -34,7 +35,13 @@ import { useZoom } from './lib/zoom'
 import { getOrder, saveOrder, sortByOrder } from './lib/order'
 import { useAutoLock } from './lib/autolock'
 import { isFreshUpdate, markVersionSeen } from './lib/releaseNotes'
-import type { EntryInput, LoginEntry, UpdateEvent, VaultStatus } from '../../shared/types'
+import type {
+  EntryInput,
+  LoginEntry,
+  UpdateEvent,
+  VaultStatus,
+  SharedReceived
+} from '../../shared/types'
 
 // 'all' | 'fav' | 'uncat' | `cat:<이름>`
 type View = string
@@ -46,6 +53,9 @@ export default function App(): JSX.Element {
   const [view, setView] = useState<View>('all')
   const [viewing, setViewing] = useState<LoginEntry | null>(null)
   const [editing, setEditing] = useState<LoginEntry | null | undefined>(undefined)
+  const [sharing, setSharing] = useState<LoginEntry | null>(null)
+  const [sharedReceived, setSharedReceived] = useState<SharedReceived[]>([])
+  const [madeShareIds, setMadeShareIds] = useState<Set<string>>(new Set())
   const [showSync, setShowSync] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [update, setUpdate] = useState<UpdateEvent | null>(null)
@@ -105,9 +115,28 @@ export default function App(): JSX.Element {
     if (res.ok && res.data) setEntries(res.data)
   }, [])
 
+  // 공유 목록 로드 (로그인 상태에서만 성공). 실패 시 조용히 비움.
+  const loadShares = useCallback(async (): Promise<void> => {
+    const res = await window.api.shareList()
+    if (res.ok && res.data) {
+      setSharedReceived(res.data.received)
+      setMadeShareIds(new Set(res.data.made.map((m) => m.itemId)))
+      if (res.data.appliedOwnerUpdates > 0) {
+        await loadEntries()
+        toast(`공유받은 수정 ${res.data.appliedOwnerUpdates}건을 반영했습니다.`, 'success')
+      }
+    } else {
+      setSharedReceived([])
+      setMadeShareIds(new Set())
+    }
+  }, [loadEntries])
+
   useEffect(() => {
-    if (status?.unlocked) void loadEntries()
-  }, [status?.unlocked, loadEntries])
+    if (status?.unlocked) {
+      void loadEntries()
+      void loadShares()
+    }
+  }, [status?.unlocked, loadEntries, loadShares])
 
   const lock = useCallback(async (): Promise<void> => {
     await window.api.lock()
@@ -142,6 +171,22 @@ export default function App(): JSX.Element {
   }, [status?.unlocked, autoLockMin, lock])
 
   async function saveEntry(input: EntryInput): Promise<void> {
+    // 받은 공유 항목 수정 → 소유자에게 되돌려 보냄 (edit 권한만)
+    if (editing && editing.shared) {
+      if (editing.shared.permission !== 'edit') {
+        toast('보기 전용으로 공유된 항목입니다.', 'error')
+        return
+      }
+      const res = await window.api.shareUpdateBack(editing.shared.shareId, input)
+      if (res.ok) {
+        setEditing(undefined)
+        await loadShares()
+        toast('수정 내용을 소유자에게 반영했습니다.', 'success')
+      } else {
+        throw new Error(res.error)
+      }
+      return
+    }
     const res =
       editing && editing.id
         ? await window.api.updateEntry(editing.id, input)
@@ -156,6 +201,24 @@ export default function App(): JSX.Element {
   }
 
   async function deleteEntry(entry: LoginEntry): Promise<boolean> {
+    // 받은 공유 항목 → 삭제가 아니라 "공유 나가기"
+    if (entry.shared) {
+      const ok = await confirm({
+        title: '공유 나가기',
+        message: `"${entry.title}" 공유에서 나갈까요? 내 목록에서만 사라지고 소유자 원본은 유지됩니다.`,
+        confirmText: '나가기',
+        danger: true
+      })
+      if (!ok) return false
+      const res = await window.api.shareDelete(entry.shared.shareId)
+      if (res.ok) {
+        await loadShares()
+        toast('공유에서 나갔습니다.', 'success')
+        return true
+      }
+      toast(res.error ?? '실패', 'error')
+      return false
+    }
     const ok = await confirm({
       title: '항목 삭제',
       message: `"${entry.title}" 항목을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`,
@@ -173,6 +236,20 @@ export default function App(): JSX.Element {
     return false
   }
 
+  // 로컬 항목(+공유함 라벨) + 받은 공유 항목을 합친 표시용 목록
+  const combined = useMemo(() => {
+    const local = entries.map((e) =>
+      madeShareIds.has(e.id)
+        ? { ...e, labels: Array.from(new Set([...(e.labels ?? []), '공유함'])) }
+        : e
+    )
+    const received = sharedReceived.map((s) => ({
+      ...s.entry,
+      shared: { shareId: s.shareId, ownerEmail: s.ownerEmail, permission: s.permission }
+    }))
+    return [...local, ...received]
+  }, [entries, madeShareIds, sharedReceived])
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     const matchesView = (e: LoginEntry): boolean => {
@@ -182,7 +259,7 @@ export default function App(): JSX.Element {
       if (view.startsWith('label:')) return !!e.labels?.includes(view.slice(6))
       return true
     }
-    const subset = entries
+    const subset = combined
       .filter(matchesView)
       .filter(
         (e) =>
@@ -193,19 +270,19 @@ export default function App(): JSX.Element {
           (e.labels ?? []).some((l) => l.toLowerCase().includes(q))
       )
     return sortByOrder(subset, order)
-  }, [entries, query, view, order])
+  }, [combined, query, view, order])
 
-  const favCount = entries.filter((e) => e.favorite).length
+  const favCount = combined.filter((e) => e.favorite).length
 
   // 항목들의 라벨을 자동 집계 (이름 → 개수). 한 항목이 여러 라벨에 속할 수 있음.
   const labelList = useMemo(() => {
     const map = new Map<string, number>()
-    for (const e of entries) {
+    for (const e of combined) {
       for (const l of e.labels ?? []) map.set(l, (map.get(l) ?? 0) + 1)
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], 'ko'))
-  }, [entries])
-  const unlabeledCount = entries.filter((e) => !(e.labels && e.labels.length > 0)).length
+  }, [combined])
+  const unlabeledCount = combined.filter((e) => !(e.labels && e.labels.length > 0)).length
 
   // 드래그 정렬 (리스트 보기)
   const dnd: DndHandlers = {
@@ -219,7 +296,7 @@ export default function App(): JSX.Element {
     },
     onDrop: (targetId, below) => {
       if (dragId && dragId !== targetId) {
-        const ids = sortByOrder(entries, order).map((e) => e.id)
+        const ids = sortByOrder(combined, order).map((e) => e.id)
         const from = ids.indexOf(dragId)
         if (from >= 0) ids.splice(from, 1)
         let to = ids.indexOf(targetId)
@@ -300,7 +377,7 @@ export default function App(): JSX.Element {
           >
             <IconKey size={17} />
             <span className="nav-label">모든 항목</span>
-            <span className="count">{entries.length}</span>
+            <span className="count">{combined.length}</span>
           </button>
           <button
             className={`nav-item ${view === 'fav' ? 'active' : ''}`}
@@ -463,12 +540,31 @@ export default function App(): JSX.Element {
               if (ok) setViewing(null)
             })
           }}
+          onShare={(e) => {
+            setViewing(null)
+            setSharing(e)
+          }}
         />
       )}
       {editing !== undefined && (
         <EntryEditor initial={editing} onClose={() => setEditing(undefined)} onSave={saveEntry} />
       )}
-      {showSync && <SyncPanel onClose={() => setShowSync(false)} onChanged={loadEntries} />}
+      {showSync && (
+        <SyncPanel
+          onClose={() => setShowSync(false)}
+          onChanged={async () => {
+            await loadEntries()
+            await loadShares()
+          }}
+        />
+      )}
+      {sharing && (
+        <ShareDialog
+          entry={sharing}
+          onClose={() => setSharing(null)}
+          onShared={loadShares}
+        />
+      )}
       {showSettings && (
         <SettingsPanel
           onClose={() => setShowSettings(false)}

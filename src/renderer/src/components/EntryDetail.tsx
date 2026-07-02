@@ -7,7 +7,8 @@ import {
   IconEdit,
   IconTrash,
   IconExternal,
-  IconStar
+  IconStar,
+  IconShare
 } from './icons'
 import EntryAvatar from './EntryAvatar'
 import { copyText, timeAgo } from '../lib/utils'
@@ -19,9 +20,12 @@ interface Props {
   onClose: () => void
   onEdit: (e: LoginEntry) => void
   onDelete: (e: LoginEntry) => void
+  onShare: (e: LoginEntry) => void
 }
 
-export default function EntryDetail({ entry, onClose, onEdit, onDelete }: Props): JSX.Element {
+export default function EntryDetail({ entry, onClose, onEdit, onDelete, onShare }: Props): JSX.Element {
+  const shared = entry.shared
+  const canEdit = !shared || shared.permission === 'edit'
   const [reveal, setReveal] = useState(false)
 
   async function copy(text: string, label: string): Promise<void> {
@@ -64,6 +68,15 @@ export default function EntryDetail({ entry, onClose, onEdit, onDelete }: Props)
         </div>
 
         <div className="modal-body">
+          {shared && (
+            <div className="shared-banner">
+              <IconShare size={15} />
+              <span>
+                <b>{shared.ownerEmail}</b> 님이 공유 ·{' '}
+                {shared.permission === 'edit' ? '수정 가능' : '보기 전용'}
+              </span>
+            </div>
+          )}
           {/* 아이디 */}
           <div className="field" style={{ marginBottom: 12 }}>
             <label>아이디 / 이메일</label>
@@ -140,14 +153,21 @@ export default function EntryDetail({ entry, onClose, onEdit, onDelete }: Props)
             style={{ marginRight: 'auto' }}
             onClick={() => onDelete(entry)}
           >
-            <IconTrash size={16} /> 삭제
+            <IconTrash size={16} /> {shared ? '공유 나가기' : '삭제'}
           </button>
+          {!shared && (
+            <button className="btn" onClick={() => onShare(entry)}>
+              <IconShare size={16} /> 공유
+            </button>
+          )}
           <button className="btn" onClick={onClose}>
             닫기
           </button>
-          <button className="btn btn-primary" onClick={() => onEdit(entry)}>
-            <IconEdit size={16} /> 수정
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => onEdit(entry)}>
+              <IconEdit size={16} /> 수정
+            </button>
+          )}
         </div>
       </div>
     </div>
