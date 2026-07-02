@@ -1411,3 +1411,24 @@ textarea.input {
   color: var(--primary);
   flex-shrink: 0;
 }
+
+/* ── 리스트/그리드 즐겨찾기 토글 ───────────────────── */
+.fav-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--text-faint);
+  background: none;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.fav-toggle.on {
+  color: var(--warning);
+}
+.fav-toggle:hover {
+  color: var(--warning);
+  background: var(--bg);
+}

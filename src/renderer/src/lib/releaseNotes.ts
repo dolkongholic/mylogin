@@ -7,6 +7,14 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.3.1': {
+    title: 'v0.3.1 — 리스트에서 즐겨찾기',
+    items: [
+      '⭐ 리스트/그리드에서 카드의 별을 눌러 즐겨찾기를 바로 켜고 끕니다 (상세창 안 들어가도 됨)',
+      '⬇️ 하단 상태줄의 "업데이트 확인" / "기록" 버튼',
+      '🤝 항목 공유(E2E)는 상세창(더블클릭)의 "공유" 버튼에 있습니다'
+    ]
+  },
   '0.3.0': {
     title: 'v0.3.0 — 항목 공유 (종단간 암호화)',
     items: [

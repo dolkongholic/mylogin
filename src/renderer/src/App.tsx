@@ -250,6 +250,24 @@ export default function App(): JSX.Element {
     return [...local, ...received]
   }, [entries, madeShareIds, sharedReceived])
 
+  async function toggleFavorite(entry: LoginEntry): Promise<void> {
+    const orig = entries.find((e) => e.id === entry.id)
+    if (!orig) return // 공유받은 항목 등 로컬에 없는 건 스킵
+    const input: EntryInput = {
+      title: orig.title,
+      username: orig.username,
+      password: orig.password,
+      url: orig.url,
+      labels: orig.labels,
+      notes: orig.notes,
+      icon: orig.icon,
+      favorite: !orig.favorite
+    }
+    const res = await window.api.updateEntry(orig.id, input)
+    if (res.ok) await loadEntries()
+    else toast(res.error ?? '즐겨찾기 변경 실패', 'error')
+  }
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     const matchesView = (e: LoginEntry): boolean => {
@@ -518,7 +536,14 @@ export default function App(): JSX.Element {
             ) : (
               <div className={viewMode === 'grid' ? 'entry-grid' : 'entry-list'}>
                 {filtered.map((e) => (
-                  <EntryCard key={e.id} entry={e} view={viewMode} onOpen={setViewing} dnd={dnd} />
+                  <EntryCard
+                    key={e.id}
+                    entry={e}
+                    view={viewMode}
+                    onOpen={setViewing}
+                    onToggleFavorite={toggleFavorite}
+                    dnd={dnd}
+                  />
                 ))}
               </div>
             )}

@@ -1,5 +1,5 @@
 import { useRef, type JSX } from 'react'
-import { IconStar, IconChevronRight } from './icons'
+import { IconStar, IconStarOutline, IconChevronRight } from './icons'
 import EntryAvatar from './EntryAvatar'
 import { copyText } from '../lib/utils'
 import { toast } from '../lib/toast'
@@ -19,11 +19,12 @@ interface Props {
   entry: LoginEntry
   view: 'grid' | 'list'
   onOpen: (e: LoginEntry) => void
-  dnd?: DndHandlers // 드래그 정렬 (그리드/리스트 모두)
+  onToggleFavorite: (e: LoginEntry) => void
+  dnd?: DndHandlers
 }
 
 // 좌클릭: 아이디 복사 / 우클릭: 비밀번호 복사 / 더블클릭: 상세 팝업
-export default function EntryCard({ entry, view, onOpen, dnd }: Props): JSX.Element {
+export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }: Props): JSX.Element {
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   async function copy(text: string, label: string): Promise<void> {
@@ -39,7 +40,6 @@ export default function EntryCard({ entry, view, onOpen, dnd }: Props): JSX.Elem
       void copy(entry.username, '아이디')
     }, 220)
   }
-
   function handleDoubleClick(): void {
     if (clickTimer.current) {
       clearTimeout(clickTimer.current)
@@ -47,18 +47,13 @@ export default function EntryCard({ entry, view, onOpen, dnd }: Props): JSX.Elem
     }
     onOpen(entry)
   }
-
   function handleContextMenu(e: React.MouseEvent): void {
     e.preventDefault()
     void copy(entry.password, '비밀번호')
   }
-
-  // 리스트: 위/아래, 그리드: 좌/우 로 삽입 위치 판별
   function belowOf(e: React.DragEvent): boolean {
     const r = e.currentTarget.getBoundingClientRect()
-    return view === 'list'
-      ? e.clientY > r.top + r.height / 2
-      : e.clientX > r.left + r.width / 2
+    return view === 'list' ? e.clientY > r.top + r.height / 2 : e.clientX > r.left + r.width / 2
   }
 
   const dragging = dnd?.dragId === entry.id
@@ -86,20 +81,44 @@ export default function EntryCard({ entry, view, onOpen, dnd }: Props): JSX.Elem
       }
     : {}
 
-  const handlers = {
+  const rootProps = {
+    role: 'button',
+    tabIndex: 0,
     onClick: handleClick,
     onDoubleClick: handleDoubleClick,
     onContextMenu: handleContextMenu,
-    title: '클릭: 아이디 복사 · 우클릭: 비밀번호 복사 · 더블클릭: 열기'
+    title: '클릭: 아이디 복사 · 우클릭: 비밀번호 복사 · 더블클릭: 열기',
+    ...dragProps
   }
 
   const dndClass = `${dnd ? 'draggable' : ''} ${dragging ? 'dragging' : ''} ${
     dropBefore ? 'drop-before' : ''
   } ${dropAfter ? 'drop-after' : ''}`
 
+  // 즐겨찾기 토글 버튼 (공유받은 항목은 제외)
+  const favBtn = !entry.shared && (
+    <button
+      className={`fav-toggle ${entry.favorite ? 'on' : ''}`}
+      title={entry.favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+      onClick={(e) => {
+        e.stopPropagation()
+        onToggleFavorite(entry)
+      }}
+    >
+      {entry.favorite ? <IconStar size={14} /> : <IconStarOutline size={14} />}
+    </button>
+  )
+
+  const labelChip = entry.labels && entry.labels.length > 0 && (
+    <span className="cat-chip">
+      {entry.labels[0]}
+      {entry.labels.length > 1 ? ` +${entry.labels.length - 1}` : ''}
+    </span>
+  )
+
   if (view === 'list') {
     return (
-      <button className={`entry-rowitem ${dndClass}`} {...handlers} {...dragProps}>
+      <div className={`entry-rowitem ${dndClass}`} {...rootProps}>
         {dnd && (
           <span className="ri-grip" aria-hidden>
             ⋮⋮
@@ -107,36 +126,23 @@ export default function EntryCard({ entry, view, onOpen, dnd }: Props): JSX.Elem
         )}
         <EntryAvatar entry={entry} size={30} className="sm" />
         <span className="ri-title">{entry.title}</span>
-        {entry.favorite && (
-          <span className="ri-star">
-            <IconStar size={13} />
-          </span>
-        )}
+        {favBtn}
         <span className="ri-user">{entry.username}</span>
-        {entry.labels && entry.labels.length > 0 && (
-          <span className="cat-chip ri-cat">
-            {entry.labels[0]}
-            {entry.labels.length > 1 ? ` +${entry.labels.length - 1}` : ''}
-          </span>
-        )}
+        {labelChip}
         <span className="entry-go">
           <IconChevronRight size={17} />
         </span>
-      </button>
+      </div>
     )
   }
 
   return (
-    <button className={`entry-card ${dndClass}`} {...handlers} {...dragProps}>
+    <div className={`entry-card ${dndClass}`} {...rootProps}>
       <EntryAvatar entry={entry} size={36} />
       <div className="entry-info">
         <div className="entry-title-row">
           <span className="entry-title">{entry.title}</span>
-          {entry.favorite && (
-            <span className="ri-star">
-              <IconStar size={13} />
-            </span>
-          )}
+          {favBtn}
         </div>
         <div className="entry-sub">
           {entry.username ? (
@@ -144,14 +150,9 @@ export default function EntryCard({ entry, view, onOpen, dnd }: Props): JSX.Elem
           ) : (
             <span className="entry-user faint">아이디 없음</span>
           )}
-          {entry.labels && entry.labels.length > 0 && (
-            <span className="cat-chip">
-              {entry.labels[0]}
-              {entry.labels.length > 1 ? ` +${entry.labels.length - 1}` : ''}
-            </span>
-          )}
+          {labelChip}
         </div>
       </div>
-    </button>
+    </div>
   )
 }
