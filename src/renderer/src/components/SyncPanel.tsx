@@ -1,5 +1,5 @@
 import { useEffect, useState, type JSX } from 'react'
-import { IconX, IconUpload, IconDownload, IconTrash, IconRefresh, IconCloud } from './icons'
+import { IconX, IconUpload, IconDownload, IconTrash, IconRefresh, IconCloud, IconShare } from './icons'
 import { toast } from '../lib/toast'
 import { confirm } from '../lib/confirm'
 import { timeAgo } from '../lib/utils'
@@ -156,6 +156,28 @@ export default function SyncPanel({ onClose, onChanged }: Props): JSX.Element {
                   onClick={() => run(() => window.api.syncStatus(), '새로고침됨')}
                 >
                   <IconRefresh size={15} /> 새로고침
+                </button>
+                <button
+                  className="btn btn-sm"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true)
+                    const res = await window.api.shareList()
+                    setBusy(false)
+                    if (res.ok && res.data) {
+                      const d = res.data
+                      const extra = d.receivedFailed > 0 ? ` · 복호화 실패 ${d.receivedFailed}개` : ''
+                      toast(
+                        `받은 공유 ${d.received.length}개 · 내가 공유 ${d.made.length}개${extra}`,
+                        d.receivedFailed > 0 ? 'error' : 'success'
+                      )
+                      onChanged()
+                    } else {
+                      toast(res.error ?? '공유 불러오기 실패', 'error')
+                    }
+                  }}
+                >
+                  <IconShare size={15} /> 받은 공유
                 </button>
                 <button
                   className="btn btn-danger btn-sm"

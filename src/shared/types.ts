@@ -70,6 +70,7 @@ export interface SharesResult {
   received: SharedReceived[]
   made: ShareMade[]
   appliedOwnerUpdates: number // 수신자가 수정한 걸 내 항목에 반영한 개수
+  receivedFailed: number // 서버엔 있으나 복호화 실패(키 불일치 등) 개수
 }
 
 // preload가 노출하는 API 시그니처

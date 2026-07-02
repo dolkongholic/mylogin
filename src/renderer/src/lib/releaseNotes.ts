@@ -7,6 +7,14 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.3.2': {
+    title: 'v0.3.2 — 받은 공유 확인',
+    items: [
+      '📥 서버 동기화 창에 "받은 공유" 버튼 추가 (받은/보낸 공유 개수 표시)',
+      'ℹ️ 받은 공유는 서버 동기화에 로그인해야 나타납니다 — 로그인 후 이 버튼을 누르세요',
+      '⭐ 리스트/그리드에서 별 클릭으로 즐겨찾기 바로 토글'
+    ]
+  },
   '0.3.1': {
     title: 'v0.3.1 — 리스트에서 즐겨찾기',
     items: [

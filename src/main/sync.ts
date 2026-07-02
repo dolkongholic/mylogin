@@ -397,14 +397,19 @@ export async function shareList(): Promise<SharesResult> {
 
   // 받은 공유 복호화
   const received: SharedReceived[] = []
+  let receivedFailed = 0
   receivedCtx.clear()
   for (const s of raw.received) {
     const json = boxDecrypt(s.payload, pair.secretKey)
-    if (!json) continue
+    if (!json) {
+      receivedFailed++
+      continue
+    }
     let entry: LoginEntry
     try {
       entry = JSON.parse(json) as LoginEntry
     } catch {
+      receivedFailed++
       continue
     }
     // "공유받음" 라벨 부여 (표시용)
@@ -462,7 +467,7 @@ export async function shareList(): Promise<SharesResult> {
     }
   }
 
-  return { received, made, appliedOwnerUpdates: applied }
+  return { received, made, appliedOwnerUpdates: applied, receivedFailed }
 }
 
 // 수신자(edit 권한)가 공유 항목을 수정 → 소유자에게 되돌려 보냄
