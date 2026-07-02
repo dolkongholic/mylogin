@@ -7,6 +7,14 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.2.2': {
+    title: 'v0.2.2 — 패치 내용 보기',
+    items: [
+      '🆕 설정 → "패치 내용 보기"로 이번 버전의 새 기능을 언제든 볼 수 있어요',
+      '🗔 닫기 = 트레이 최소화 (트레이 아이콘 클릭으로 열기, 우클릭 종료)',
+      '🏷️ 라벨(다중), 🔄 동기화 가져오기 수정, 🌐 URL 파비콘, 🔒 자동 잠금'
+    ]
+  },
   '0.2.1': {
     title: 'v0.2.1 — 트레이 상주',
     items: [

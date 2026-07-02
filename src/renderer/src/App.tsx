@@ -461,7 +461,12 @@ export default function App(): JSX.Element {
         <EntryEditor initial={editing} onClose={() => setEditing(undefined)} onSave={saveEntry} />
       )}
       {showSync && <SyncPanel onClose={() => setShowSync(false)} onChanged={loadEntries} />}
-      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+      {showSettings && (
+        <SettingsPanel
+          onClose={() => setShowSettings(false)}
+          onShowNotes={() => window.api.appVersion().then(setWhatsNewVersion)}
+        />
+      )}
       <Toasts />
       <ConfirmDialog />
       {whatsNewVersion && (

@@ -5,9 +5,10 @@ import { useAutoLock, setAutoLock, AUTOLOCK_OPTIONS } from '../lib/autolock'
 
 interface Props {
   onClose: () => void
+  onShowNotes: () => void
 }
 
-export default function SettingsPanel({ onClose }: Props): JSX.Element {
+export default function SettingsPanel({ onClose, onShowNotes }: Props): JSX.Element {
   const [version, setVersion] = useState('')
   const [cur, setCur] = useState('')
   const [next, setNext] = useState('')
@@ -116,6 +117,12 @@ export default function SettingsPanel({ onClose }: Props): JSX.Element {
             <span className="muted">{updateMsg || '업데이트를 확인할 수 있습니다.'}</span>
             <button className="btn btn-sm" onClick={checkUpdate}>
               <IconRefresh size={15} /> 업데이트 확인
+            </button>
+          </div>
+          <div className="row" style={{ justifyContent: 'space-between', marginTop: 10 }}>
+            <span className="muted">이번 버전의 새로운 기능</span>
+            <button className="btn btn-sm" onClick={onShowNotes}>
+              패치 내용 보기
             </button>
           </div>
         </div>
