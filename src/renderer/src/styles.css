@@ -1358,3 +1358,21 @@ textarea.input {
   background: var(--success);
   margin-top: 1px;
 }
+
+/* ── 상태줄 링크 버튼 ──────────────────────────────── */
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.status-link {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  padding: 0;
+  background: none;
+  border: none;
+}
+.status-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}

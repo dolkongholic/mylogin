@@ -1,6 +1,11 @@
 import { useEffect, useState, type JSX } from 'react'
 
-export default function StatusBar(): JSX.Element {
+interface Props {
+  onCheckUpdate: () => void
+  onShowNotes: () => void
+}
+
+export default function StatusBar({ onCheckUpdate, onShowNotes }: Props): JSX.Element {
   const [version, setVersion] = useState('')
   useEffect(() => {
     window.api.appVersion().then(setVersion)
@@ -8,7 +13,15 @@ export default function StatusBar(): JSX.Element {
 
   return (
     <div className="statusbar">
-      <span className="status-left">v{version || '0.0.0'}</span>
+      <div className="status-left">
+        <span>v{version || '0.0.0'}</span>
+        <button className="status-link" onClick={onCheckUpdate}>
+          업데이트 확인
+        </button>
+        <button className="status-link" onClick={onShowNotes}>
+          기록
+        </button>
+      </div>
       <span className="status-right">MangoSpanner</span>
     </div>
   )

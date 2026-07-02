@@ -7,6 +7,14 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.2.4': {
+    title: 'v0.2.4 — 하단 상태줄 버튼',
+    items: [
+      '⬇️ 하단 상태줄에 "업데이트 확인" 링크 버튼 추가 (클릭 시 즉시 확인)',
+      '🕘 하단 상태줄 "기록" 버튼으로 패치 내용 팝업 다시 보기',
+      '🔜 다음 업데이트: 종단간 암호화 공유 기능'
+    ]
+  },
   '0.2.3': {
     title: 'v0.2.3 — 새 소식 알림 정상화',
     items: [

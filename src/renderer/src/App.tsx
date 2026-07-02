@@ -238,13 +238,21 @@ export default function App(): JSX.Element {
     }
   }
 
+  const showNotes = (): void => {
+    window.api.appVersion().then(setWhatsNewVersion)
+  }
+  const checkUpdate = async (): Promise<void> => {
+    const res = await window.api.checkForUpdates()
+    toast(res.ok ? (res.data ?? '확인 완료') : (res.error ?? '확인 실패'), res.ok ? 'info' : 'error')
+  }
+
   // ── 로딩 ──
   if (!status) {
     return (
       <div className="window">
         <TitleBar />
         <div style={{ flex: 1 }} />
-        <StatusBar />
+        <StatusBar onCheckUpdate={checkUpdate} onShowNotes={showNotes} />
       </div>
     )
   }
@@ -255,7 +263,7 @@ export default function App(): JSX.Element {
       <div className="window">
         <TitleBar />
         <UnlockScreen isNew={!status.exists} onUnlocked={setStatus} />
-        <StatusBar />
+        <StatusBar onCheckUpdate={checkUpdate} onShowNotes={showNotes} />
         <Toasts />
         <ConfirmDialog />
         {whatsNewVersion && (
@@ -440,7 +448,7 @@ export default function App(): JSX.Element {
           </div>
         </main>
       </div>
-      <StatusBar />
+      <StatusBar onCheckUpdate={checkUpdate} onShowNotes={showNotes} />
 
       {viewing && (
         <EntryDetail
