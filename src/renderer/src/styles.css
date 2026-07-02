@@ -1486,3 +1486,28 @@ textarea.input {
 .entry-rowitem.sharedout {
   box-shadow: inset 3px 0 0 0 var(--success);
 }
+
+/* ── 공유 방향 표시: 원형 점 (받음=파랑 / 공유중=초록) ── */
+.share-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.share-dot.recv {
+  background: #3b82f6;
+}
+.share-dot.out {
+  background: #22c55e;
+}
+.entry-rowitem .share-dot {
+  margin-left: 6px;
+}
+.entry-card {
+  position: relative;
+}
+.entry-card .share-dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+}

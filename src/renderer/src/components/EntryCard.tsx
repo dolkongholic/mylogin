@@ -93,19 +93,13 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
 
   const dndClass = `${dnd ? 'draggable' : ''} ${dragging ? 'dragging' : ''} ${
     dropBefore ? 'drop-before' : ''
-  } ${dropAfter ? 'drop-after' : ''} ${entry.shared ? 'shared' : ''} ${
-    entry.sharedOut ? 'sharedout' : ''
-  }`
+  } ${dropAfter ? 'drop-after' : ''}`
 
-  // 공유 방향 배지
-  const shareTag = entry.shared ? (
-    <span className="share-tag recv" title={`${entry.shared.ownerEmail}님이 공유`}>
-      받음
-    </span>
+  // 공유 방향: 끝에 작은 원형 점 (받음=파랑, 내가 공유=초록)
+  const shareDot = entry.shared ? (
+    <span className="share-dot recv" title={`${entry.shared.ownerEmail}님이 공유`} />
   ) : entry.sharedOut ? (
-    <span className="share-tag out" title="내가 공유 중">
-      공유중
-    </span>
+    <span className="share-dot out" title="내가 공유 중" />
   ) : null
 
   // 즐겨찾기 토글 버튼 (공유받은 항목은 제외)
@@ -139,7 +133,6 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
         )}
         <EntryAvatar entry={entry} size={30} className="sm" />
         <span className="ri-title">{entry.title}</span>
-        {shareTag}
         {favBtn}
         <span className="ri-user">{entry.username}</span>
         {entry.labels && entry.labels.length > 0 && (
@@ -154,17 +147,18 @@ export default function EntryCard({ entry, view, onOpen, onToggleFavorite, dnd }
             )}
           </span>
         )}
+        {shareDot}
       </div>
     )
   }
 
   return (
     <div className={`entry-card ${dndClass}`} {...rootProps}>
+      {shareDot}
       <EntryAvatar entry={entry} size={36} />
       <div className="entry-info">
         <div className="entry-title-row">
           <span className="entry-title">{entry.title}</span>
-          {shareTag}
           {favBtn}
         </div>
         <div className="entry-sub">

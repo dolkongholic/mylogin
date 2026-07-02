@@ -7,6 +7,13 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.3.8': {
+    title: 'v0.3.8 — 공유 표시 변경',
+    items: [
+      '⚪ 배경 틴트·좌측선 대신 작은 원형 점으로 공유 구별',
+      '🔵 받은 항목 = 파란 점, 🟢 내가 공유한 항목 = 초록 점 (리스트는 끝, 그리드는 우상단)'
+    ]
+  },
   '0.3.7': {
     title: 'v0.3.7 — 공유 구별 · 커서 제거',
     items: [
