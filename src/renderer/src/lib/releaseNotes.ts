@@ -7,6 +7,13 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: Record<string, ReleaseNote> = {
+  '0.3.9': {
+    title: 'v0.3.9 — 공유 편의 기능',
+    items: [
+      '📇 공유 창에 "최근 공유한 사람" 목록 — 클릭하면 이메일 자동 입력',
+      '🔧 기존 공유의 권한을 목록에서 바로 변경 (보기 ↔ 수정 가능)'
+    ]
+  },
   '0.3.8': {
     title: 'v0.3.8 — 공유 표시 변경',
     items: [
